@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <title>Prognoza pogody - {{ city }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+            color: #222;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #0d3b66;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: #ff4c4c;
+            font-weight: 700;
+            background: #ffe6e6;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(255,0,0,0.15);
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        table {
+            width: 90%;
+            max-width: 800px;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            background-color: #fff;
+            margin-bottom: 40px;
+            font-size: 1rem;
+        }
+        thead tr {
+            background: linear-gradient(90deg, #0d3b66, #3f72af);
+            color: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        th, td {
+            padding: 14px 20px;
+            text-align: center;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+        th:last-child, td:last-child {
+            border-right: none;
+        }
+        tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.3s ease;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f7faff;
+        }
+        tbody tr:hover {
+            background-color: #dbe9ff;
+        }
+
+        #chartContainer {
+            width: 90%;
+            max-width: 900px;
+            background: #fff;
+            padding: 25px 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+            table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Prognoza pogody dla {{ city }}</h1>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% elif forecast and forecast.time %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Temperatura maks. (°C)</th>
+                    <th>Temperatura min. (°C)</th>
+                    <th>Opady (mm)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in range(forecast.time|length) %}
+                    <tr>
+                        <td>{{ forecast.time[i] }}</td>
+                        <td>{{ forecast.temperature_2m_max[i] }}</td>
+                        <td>{{ forecast.temperature_2m_min[i] }}</td>
+                        <td>{{ forecast.precipitation_sum[i] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div id="chartContainer">
+            <canvas id="weatherChart" width="800" height="400"></canvas>
+        </div>
+
+        <script>
+            const labels = {{ forecast.time|tojson }};
+            const tempMax = {{ forecast.temperature_2m_max|tojson }};
+            const tempMin = {{ forecast.temperature_2m_min|tojson }};
+            const precipitation = {{ forecast.precipitation_sum|tojson }};
+
+            const ctx = document.getElementById('weatherChart').getContext('2d');
+
+            const weatherChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temperatura maksymalna (°C)',
+                            data: tempMax,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.3)',
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                        },
+                        {
+                            label: 'Temperatura minimalna (°C)',
+                            data: tempMin,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.3)',
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                        },
+                        {
+                            label: 'Opady (mm)',
+                            data: precipitation,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.3)',
+                            fill: true,
+                            yAxisID: 'y1',
+                            tension: 0.3,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Temperatura (°C)',
+                                font: { weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Opady (mm)',
+                                font: { weight: 'bold' }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 30
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { size: 14, weight: '600' }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Prognoza pogody',
+                            font: { size: 20, weight: '700' }
+                        },
+                        tooltip: {
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 16, weight: 'bold' },
+                            bodyFont: { size: 14 }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        </script>
+
+    {% else %}
+        <p>Brak danych pogodowych.</p>
+    {% endif %}
+</body>
+</html>
+
