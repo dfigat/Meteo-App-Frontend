@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="pl" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pogoda Web</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        html {
+            box-sizing: border-box;
+        }
+        *, *::before, *::after {
+            box-sizing: inherit;
+        }
+
+        :root {
+            --bs-font-sans-sans-serif: 'Inter', sans-serif;
+            --fs-heading-lg: 3.5rem;
+            --fs-heading-md: 2.8rem;
+            --fs-heading-sm: 2.2rem;
+            --fs-lead-lg: 1.5rem;
+            --fs-lead-md: 1.25rem;
+            --fs-quote-lg: 1.1rem;
+            --fs-quote-md: 0.95rem;
+        }
+
+        :root[data-bs-theme='dark'] {
+            --bs-body-bg: #121212;
+            --bs-body-color: #e2e6ea;
+            --bs-card-bg: #2b3035;
+            --bs-canvas-bg: #2b3035;
+            --bs-form-control-bg: #212529;
+            --bs-form-control-color: #e2e6ea;
+            --bs-form-control-placeholder-color: #9da3a8;
+            --bs-form-control-focus-border: #0d6efd;
+            --bs-form-control-focus-shadow: rgba(13, 110, 253, 0.25);
+            --bs-offcanvas-bg: #2b3035;
+            --bs-list-group-item-color: #e2e6ea;
+            --bs-list-group-item-hover-bg: rgba(13, 110, 253, 0.2);
+            --bs-list-group-item-hover-color: #fff;
+            --bs-border-color: rgba(255, 255, 255, 0.1);
+            --bs-text-muted-color: #9da3a8;
+            --bs-navbar-bg: #212529;
+        }
+        :root[data-bs-theme='light'] {
+            --bs-body-bg: #ffffff;
+            --bs-body-color: #212529;
+            --bs-card-bg: #f8f9fa;
+            --bs-canvas-bg: #f0f2f5;
+            --bs-form-control-bg: #ffffff;
+            --bs-form-control-color: #212529;
+            --bs-form-control-placeholder-color: #6c757d;
+            --bs-form-control-focus-border: #0d6efd;
+            --bs-form-control-focus-shadow: rgba(13, 110, 253, 0.25);
+            --bs-offcanvas-bg: #f8f9fa;
+            --bs-list-group-item-color: #212529;
+            --bs-list-group-item-hover-bg: rgba(13, 110, 253, 0.1);
+            --bs-list-group-item-hover-color: #0d6efd;
+            --bs-border-color: rgba(0, 0, 0, 0.1);
+            --bs-text-muted-color: #6c757d;
+            --bs-navbar-bg: #f8f9fa;
+        }
+
+        body {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            font-family: var(--bs-font-sans-serif);
+            line-height: 1.6;
+        }
+
+        h1 {
+            font-size: var(--fs-heading-lg);
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+
+        .lead {
+            font-size: var(--fs-lead-lg);
+            font-weight: 300;
+        }
+
+        .bg-primary {
+            background-color: #0d6efd !important;
+        }
+
+        .bg-secondary {
+            background-color: #343a40 !important;
+        }
+
+        .card {
+            border: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: var(--bs-card-bg) !important;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        #map {
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            min-height: 250px;
+        }
+
+        #map:hover {
+            transform: scale(1.005);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            background: var(--bs-canvas-bg);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        canvas:hover {
+            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+        }
+
+        .spinner-wrapper {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin: 2em 0;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .form-control, .btn {
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control {
+            background-color: var(--bs-form-control-bg);
+            color: var(--bs-form-control-color);
+        }
+
+        .form-control:focus {
+            border-color: var(--bs-form-control-focus-border);
+            box-shadow: 0 0 0 0.25rem var(--bs-form-control-focus-shadow);
+        }
+
+        .form-control::placeholder {
+            color: var(--bs-form-control-placeholder-color);
+        }
+
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+            transform: translateY(-2px);
+        }
+
+        .toast {
+            border-radius: 8px;
+            background-color: rgba(220, 53, 69, 0.9);
+        }
+
+        .toast-body {
+            color: #fff;
+        }
+
+        .navbar {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            background-color: var(--bs-navbar-bg) !important;
+            border-bottom: 1px solid var(--bs-border-color);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: var(--bs-primary) !important;
+            margin-left: 1rem;
+        }
+
+        .navbar-brand .logo {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .theme-toggle-btn, .menu-toggle-btn {
+            background: none;
+            border: 1px solid var(--bs-border-color);
+            color: var(--bs-body-color);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle-btn:hover, .menu-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .theme-toggle-btn i, .menu-toggle-btn i {
+            font-size: 1.2rem;
+        }
+
+        .hero-section {
+            background-color: var(--bs-primary) !important;
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://www.transparenttextures.com/patterns/clean-gray-paper.png');
+            opacity: 0.1;
+            z-index: 1;
+        }
+
+        .hero-section .container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-section h1 {
+            font-size: var(--fs-heading-lg);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-section .lead {
+            font-size: var(--fs-lead-lg);
+            font-weight: 300;
+            margin-bottom: 2rem;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        #carouselQuotes {
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1.5rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+        }
+
+        #carouselQuotes .carousel-inner {
+            width: 100%;
+        }
+
+        #carouselQuotes .carousel-item .d-block {
+            font-size: var(--fs-quote-lg);
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.9);
+            padding: 0 40px;
+        }
+
+        #carouselQuotes .carousel-control-prev-icon,
+        #carouselQuotes .carousel-control-next-icon {
+            background-image: none;
+            width: 1.5rem;
+            height: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+        }
+
+        #carouselQuotes .carousel-control-prev-icon::before {
+            content: '\276E';
+            color: #fff;
+        }
+
+        #carouselQuotes .carousel-control-next-icon::before {
+            content: '\276F';
+            color: #fff;
+        }
+
+        .animate__fadeInDown {
+            animation-duration: 1s;
+        }
+        .animate__fadeInUp {
+            animation-duration: 1s;
+        }
+
+        .offcanvas {
+            background-color: var(--bs-offcanvas-bg) !important;
+            color: var(--bs-body-color);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .offcanvas-header {
+            border-bottom: 1px solid var(--bs-border-color);
+        }
+
+        .offcanvas-title {
+            color: var(--bs-primary);
+            font-weight: 700;
+        }
+
+        .offcanvas .btn-close {
+            filter: var(--bs-body-color-filter, invert(1) grayscale(100%) brightness(200%)); 
+        }
+
+        .offcanvas-body .list-group-item {
+            background-color: transparent;
+            color: var(--bs-list-group-item-color);
+            border: none;
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .offcanvas-body .list-group-item:hover {
+            background-color: var(--bs-list-group-item-hover-bg);
+            color: var(--bs-list-group-item-hover-color);
+        }
+
+        .offcanvas-body .list-group-item.active {
+            background-color: var(--bs-primary) !important;
+            color: #fff !important;
+            font-weight: 600;
+            border-radius: 0.5rem;
+        }
+
+        .offcanvas-body .list-group-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .text-muted {
+            color: var(--bs-text-muted-color) !important;
+        }
+
+        @media (max-width: 767.98px) {
+            #map {
+                height: 250px;
+            }
+            h1 {
+                font-size: var(--fs-heading-sm);
+            }
+            h2 {
+                font-size: 2rem;
+            }
+            .lead {
+                font-size: var(--fs-lead-md);
+            }
+            .carousel-item .d-block {
+                font-size: var(--fs-quote-md) !important;
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+            }
+            .py-5 {
+                padding-top: 3rem !important;
+                padding-bottom: 3rem !important;
+            }
+            .my-5 {
+                margin-top: 3rem !important;
+                margin-bottom: 3rem !important;
+            }
+            .row.g-3 {
+                gap: 1rem !important;
+            }
+            .mb-4 {
+                margin-bottom: 1.5rem !important;
+            }
+            .navbar-brand {
+                font-size: 1.4rem;
+            }
+            .navbar-brand .logo {
+                height: 30px;
+            }
+            .hero-section h1 {
+                font-size: var(--fs-heading-md);
+            }
+            .hero-section .lead {
+                font-size: var(--fs-lead-md);
+            }
+            #carouselQuotes {
+                padding: 1rem;
+                min-height: 100px;
+            }
+            #carouselQuotes .carousel-item .d-block {
+                font-size: var(--fs-quote-md) !important;
+                padding: 0 20px;
+            }
+            .navbar .ms-auto .btn {
+                margin-left: 0.25rem;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .hero-section h1 {
+                font-size: var(--fs-heading-sm);
+            }
+            .hero-section .lead {
+                font-size: var(--fs-lead-md);
+            }
+        }
+
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+
+        #hourlyForecastWidgets .card {
+            width: 160px;
+            min-width: 160px;
+            text-align: center;
+            padding: 1rem;
+        }
+        #hourlyForecastWidgets .card .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        #hourlyForecastWidgets .card .card-text {
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+    </style>
+</head>
+<body class="bg-dark text-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark animate__animated animate__fadeInDown">
+        <div class="container">
+            <button class="menu-toggle-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <a class="navbar-brand" href="#">
+                Pogoda Web
+            </a>
+            <div class="ms-auto">
+                <button id="themeToggle" class="theme-toggle-btn">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu" aria-labelledby="offcanvasMenuLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasMenuLabel"><i class="fas fa-cloud-sun me-2"></i>Pogoda Web Menu</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="list-group list-group-flush">
+                <a href="#" class="list-group-item list-group-item-action active" aria-current="page" data-menu-item="mapa"><i class="fas fa-map-marked-alt"></i>Mapa Pogody</a>
+                <a href="#" class="list-group-item list-group-item-action" data-menu-item="statystyki"><i class="fas fa-chart-line"></i>Statystyki Pogodowe</a>
+                <a href="#" class="list-group-item list-group-item-action" data-menu-item="dlugoterminowa"><i class="fas fa-calendar-alt"></i>Prognoza Długoterminowa</a>
+                <a href="#" class="list-group-item list-group-item-action" data-menu-item="historia"><i class="fas fa-history"></i>Historia Lokalizacji</a>
+                <a href="#" class="list-group-item list-group-item-action" data-menu-item="o-aplikacji"><i class="fas fa-info-circle"></i>O Aplikacji</a>
+                <a href="#" class="list-group-item list-group-item-action" data-menu-item="kontakt"><i class="fas fa-envelope"></i>Kontakt</a>
+            </div>
+            <div class="mt-4 border-top pt-3">
+                <p class="text-muted small">Wersja 1.0.0</p>
+            </div>
+        </div>
+    </div>
+
+    <header class="hero-section text-white text-center py-5 shadow-lg animate__animated animate__fadeInDown">
+        <div class="container">
+            <h1 class="fw-bold">Interaktywna Mapa Pogody</h1>
+            <p class="lead">Kliknij na mapie lub wyszukaj miasto, aby zobaczyć aktualną prognozę i szczegółowe dane.</p>
+            <div id="carouselQuotes" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+                <div class="carousel-inner" id="quoteCarouselInner">
+                    </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselQuotes" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Poprzedni cytat</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselQuotes" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Następny cytat</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="mapa-content" class="container my-5 animate__animated animate__fadeInUp content-section active">
+        <div class="row g-3 mb-4 align-items-center">
+            <div class="col-md-8">
+                <input type="text" id="cityInput" placeholder="Wpisz miasto..." class="form-control form-control-lg shadow-sm" aria-label="Wpisz nazwę miasta" />
+            </div>
+            <div class="col-md-4">
+                <button onclick="searchCity()" class="btn btn-primary btn-lg w-100 shadow-sm"><i class="fas fa-search me-2"></i>Szukaj</button>
+            </div>
+            </div>
+
+        <div class="spinner-wrapper" id="spinner">
+            <div class="spinner-border text-info" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Ładowanie...</span>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <div id="map" class="shadow-lg rounded-4" title="Mapa pogodowa" aria-label="Mapa pogodowa z możliwością kliknięcia"></div>
+        </div>
+
+        <div id="result" class="card shadow-lg mb-5 p-4 rounded-4">
+            <p class="lead mb-0">Kliknij na mapie lub wyszukaj miasto, aby zobaczyć pogodę.</p>
+        </div>
+
+        <h2 class="text-center mb-4 text-primary d-none d-md-block">Prognoza dzienna</h2>
+        <canvas id="dailyChart" class="w-100 mb-5 shadow-lg d-none d-md-block"></canvas>
+        
+        <h2 class="text-center mb-4 mt-5 text-primary d-md-none">Prognoza dzienna (widżety)</h2>
+        <div id="dailyForecastWidgets" class="mb-5 d-md-none">
+            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4">
+            </div>
+        </div>
+
+        <h2 class="text-center mb-4 text-primary d-none d-md-block">Prognoza godzinowa</h2>
+        <canvas id="hourlyChart" class="w-100 shadow-lg d-none d-md-block"></canvas>
+
+        <h2 class="text-center mb-4 mt-5 text-primary d-md-none">Prognoza godzinowa (widżety)</h2>
+        <div id="hourlyForecastWidgets" class="mb-5 d-md-none">
+            <div class="d-flex flex-nowrap overflow-auto py-3">
+            </div>
+        </div>
+    </main>
+
+    <div id="historia-content" class="container my-5 animate__animated animate__fadeInUp content-section">
+        <h2 class="text-center mb-4 text-primary">Ostatnio Wyszukiwane Lokalizacje</h2>
+        <div class="card shadow-lg p-4 rounded-4">
+            <ul id="historyList" class="list-group list-group-flush">
+                <li class="list-group-item bg-transparent text-center text-muted">Brak ostatnich lokalizacji.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="o-aplikacji-content" class="container my-5 animate__animated animate__fadeInUp content-section">
+        <h2 class="text-center mb-4 text-primary">O Aplikacji Pogoda Web</h2>
+        <div class="card shadow-lg p-4 rounded-4">
+            <p class="lead">
+                Aplikacja "Pogoda Web" to interaktywne narzędzie do sprawdzania aktualnej pogody oraz prognoz dziennych i godzinowych dla dowolnego miejsca na świecie. 
+                Wykorzystujemy dane z otwartych źródeł, aby dostarczyć Ci precyzyjne i aktualne informacje pogodowe.
+            </p>
+            <p>
+                Nasza aplikacja pozwala na:
+            </p>
+            <ul>
+                <li>Wyszukiwanie pogody dla dowolnego miasta na świecie.</li>
+                <li>Pobieranie danych pogodowych poprzez kliknięcie na mapie.</li>
+                <li>Wyświetlanie szczegółowych prognoz dziennych i godzinowych, w tym temperatury, opadów i prędkości wiatru.</li>
+                <li>Przełączanie motywu interfejsu (jasny/ciemny).</li>
+                <li><strong>Automatyczne wykrywanie Twojej bieżącej lokalizacji</strong> po wejściu na stronę (jeśli wyrazisz zgodę).</li>
+            </ul>
+            <p>
+                Stale rozwijamy naszą aplikację, aby dostarczać jeszcze więcej funkcji i ulepszeń. Dziękujemy za korzystanie z Pogoda Web!
+            </p>
+            <p class="text-muted small mt-3">Wersja aplikacji: 1.0.0</p>
+        </div>
+    </div>
+
+    <div id="kontakt-content" class="container my-5 animate__animated animate__fadeInUp content-section">
+        <h2 class="text-center mb-4 text-primary">Kontakt</h2>
+        <div class="card shadow-lg p-4 rounded-4">
+            <p class="lead">
+                Masz pytania, sugestie lub napotkałeś problem? Skontaktuj się z nami!
+            </p>
+            <p>
+                Możesz wysłać do nas wiadomość e-mail na adres:
+            </p>
+            <p class="mb-4">
+                <i class="fas fa-envelope me-2"></i><a href="mailto:jakub.figat.02@gmail.com" class="text-primary">jakub.figat.02@gmaila.com</a>
+            </p>
+            <p>
+                Postaramy się odpowiedzieć tak szybko, jak to możliwe.
+            </p>
+            <p class="text-muted small mt-3">Dziękujemy za kontakt!</p>
+        </div>
+    </div>
+
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="toastError" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastBody">Błąd</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Zamknij"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+	document.addEventListener('DOMContentLoaded', () => {
+            const themeToggleBtn = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            const htmlElement = document.documentElement;
+
+            const currentTheme = htmlElement.getAttribute('data-bs-theme');
+            if (currentTheme === 'light') {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                let currentTheme = htmlElement.getAttribute('data-bs-theme');
+                if (currentTheme === 'dark') {
+                    htmlElement.setAttribute('data-bs-theme', 'light');
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                } else {
+                    htmlElement.setAttribute('data-bs-theme', 'dark');
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                }
+            });
+
+            const menuItems = document.querySelectorAll('#offcanvasMenu .list-group-item');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            function showContentSection(id) {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                const targetSection = document.getElementById(id + '-content');
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                }
+                if (id === 'mapa' && map) {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                }
+            }
+
+            menuItems.forEach(item => {
+                item.addEventListener('click', function(event) {
+                    event.preventDefault();
+
+                    menuItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const menuItemId = this.dataset.menuItem;
+                    showContentSection(menuItemId);
+
+                    const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                    if (offcanvasMenu) {
+                        offcanvasMenu.hide();
+                    }
+                });
+            });
+
+            showContentSection('mapa');
+
+            const lastLocation = loadLastLocation();
+            if (lastLocation) {
+                currentPlaceName = lastLocation.name;
+                map.setView([lastLocation.lat, lastLocation.lon], 10);
+                setMarker(lastLocation.lat, lastLocation.lon, lastLocation.name);
+                updateResult(`Pobieranie pogody dla: ${lastLocation.name}...`);
+                showSpinner(true);
+                fetchWeather(lastLocation.lat, lastLocation.lon).finally(() => showSpinner(false));
+            } else {
+                useCurrentLocation();
+            }
+        });
+
+        const weatherQuotes = [
+            "Ale nie do nas należy panowanie nad wszystkimi erami tego świata...",
+            "TO KATAKLIZM, KATAKLIZM, KATAKLIZM!",
+            "– Jesteś dobrym człowiekiem. – ...na złą pogodę.",
+            "Nie ma złej pogody, jest tylko złe ubranie!",
+            "Pomyślmy. Dziś mamy środę...",
+            "Nie jestem ja rządcą pogody...",
+            "Mgłę — odparł najwyższy kapłan.",
+            "Jeśli pogoda ci nie odpowiada, poczekaj aż minie.",
+            "Internetowe wyzwiska znikają jak pogoda...",
+            "Zima nie umiera. Nie tak jak umierają ludzie.",
+            "Historia ludzkości to w 73% rozmowy o pogodzie."
+        ];
+
+        function populateCarousel() {
+            const container = document.getElementById("quoteCarouselInner");
+            container.innerHTML = '';
+            weatherQuotes.forEach((quote, i) => {
+                const item = document.createElement("div");
+                item.className = `carousel-item${i === 0 ? " active" : ""}`;
+                item.innerHTML = `<div class=\"d-block w-100 px-3 pb-2 fs-6 fst-italic text-shadow-sm\">${quote}</div>`;
+                container.appendChild(item);
+            });
+        }
+
+        populateCarousel();
+
+        function showSpinner(show) {
+            const spinner = document.getElementById("spinner");
+            if (show) {
+                spinner.style.display = "flex";
+            } else {
+                spinner.style.display = "none";
+            }
+        }
+
+        function showToast(message) {
+            const toastEl = document.getElementById("toastError");
+            const toastBody = document.getElementById("toastBody");
+            toastBody.innerText = message;
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        function updateResult(text, isError = false) {
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = `<p class=\"lead mb-0\">${text}</p>`;
+            if (isError) {
+                resultDiv.classList.remove('bg-secondary');
+                resultDiv.classList.add('bg-danger');
+                showToast(text);
+            } else {
+                resultDiv.classList.remove('bg-danger');
+                resultDiv.classList.add('bg-secondary');
+            }
+        }
+
+        const map = L.map('map').setView([52.237, 21.017], 6);
+        let marker = null;
+        let currentPlaceName = null;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>' }).addTo(map);
+
+        const rainLayer = L.tileLayer('', {
+            opacity: 0.6,
+            zIndex: 100,
+            attribution: 'Dane radarowe: RainViewer.com'
+        });
+
+        async function updateRainLayer() {
+            try {
+                const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+                const data = await res.json();
+                const timestamps = data.radar.past;
+                if (!timestamps.length) return;
+
+                const latestTime = timestamps[timestamps.length - 1].path;
+                const tileUrl = `https://tilecache.rainviewer.com/v2/radar/${latestTime}/256/{z}/{x}/{y}/2/1_1.png`;
+
+                rainLayer.setUrl(tileUrl);
+                map.addLayer(rainLayer);
+            } catch (err) {
+                console.error("Błąd pobierania warstwy deszczu:", err);
+            }
+        }
+
+        async function fetchWithTimeout(resource, options = {}) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000);
+            options.signal = controller.signal;
+
+            try {
+                const response = await fetch(resource, options);
+                clearTimeout(timeout);
+                return response;
+            } catch (error) {
+                clearTimeout(timeout);
+                if (error.name === 'AbortError') {
+                    throw new Error('Żądanie zostało przerwane: przekroczono limit czasu.');
+                }
+                throw error;
+            }
+        }
+
+        async function fetchPlaceName(lat, lon) {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+            const response = await fetchWithTimeout(url, {
+                headers: { 'User-Agent': 'PogodaApp/1.0 (your-email@example.com)' }
+            });
+            if (!response.ok) throw new Error('Błąd podczas pobierania nazwy miejsca.');
+            const data = await response.json();
+            return data.display_name || 'Nieznana lokalizacja';
+        }
+
+        function setMarker(lat, lon, name) {
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lon]).addTo(map);
+            if (name) marker.bindPopup(name).openPopup();
+        }
+
+        map.on('click', async (e) => {
+            const { lat, lng: lon } = e.latlng;
+            setMarker(lat, lon, "Ładowanie nazwy...");
+            map.setView([lat, lon], 10);
+            updateResult("Ładowanie nazwy lokalizacji...");
+            showSpinner(true);
+            try {
+                const placeName = await fetchPlaceName(lat, lon);
+                currentPlaceName = placeName;
+                setMarker(lat, lon, placeName);
+                updateResult("Ładowanie pogody...");
+                await fetchWeather(lat, lon);
+            } catch (err) {
+                updateResult("Błąd: " + err.message, true);
+            }
+            showSpinner(false);
+        });
+
+        async function searchCity() {
+            const city = document.getElementById('cityInput').value.trim();
+            if (!city) {
+                updateResult("Proszę wpisać nazwę miasta.", true);
+                return;
+            }
+
+            updateResult("Wyszukiwanie miasta...");
+            showSpinner(true);
+            try {
+                const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=1`, {
+                    headers: { 'User-Agent': 'PogodaApp/1.0 (your-email@example.com)' }
+                });
+                if (!res.ok) throw new Error('Błąd podczas wyszukiwania miasta.');
+                const data = await res.json();
+                if (!data.length) {
+                    updateResult("Nie znaleziono miasta.", true);
+                    return;
+                }
+
+                const { lat, lon, display_name } = data[0];
+                currentPlaceName = display_name;
+                map.setView([lat, lon], 10);
+                setMarker(lat, lon, display_name);
+                updateResult("Ładowanie pogody...");
+                await fetchWeather(lat, lon);
+            } catch (err) {
+                updateResult("Błąd: " + err.message, true);
+            }
+            showSpinner(false);
+        }
+
+        function useCurrentLocation() {
+            if (navigator.geolocation) {
+                updateResult("Pobieranie Twojej bieżącej lokalizacji...");
+                showSpinner(true);
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        try {
+                            const placeName = await fetchPlaceName(lat, lon);
+                            currentPlaceName = placeName;
+                            map.setView([lat, lon], 10);
+                            setMarker(lat, lon, placeName);
+                            updateResult(`Pobieranie pogody dla: ${placeName}...`);
+                            await fetchWeather(lat, lon);
+                        } catch (err) {
+                            updateResult("Błąd podczas pobierania pogody dla Twojej lokalizacji: " + err.message, true);
+                        } finally {
+                            showSpinner(false);
+                        }
+                    },
+                    (error) => {
+                        showSpinner(false);
+                        let errorMessage = "Nie udało się pobrać Twojej lokalizacji. ";
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += "Odmówiono dostępu do geolokalizacji. Proszę zezwolić na dostęp do lokalizacji w ustawieniach przeglądarki.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += "Informacje o lokalizacji są niedostępne.";
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += "Przekroczono czas oczekiwania na lokalizację.";
+                                break;
+                            case error.UNKNOWN_ERROR:
+                                errorMessage += "Wystąpił nieznany błąd.";
+                                break;
+                        }
+                        updateResult(errorMessage, true);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                updateResult("Twoja przeglądarka nie obsługuje geolokalizacji.", true);
+            }
+        }
+
+        let dailyChart = null;
+        let hourlyChart = null;
+
+        function saveLastLocation(lat, lon, name) {
+            localStorage.setItem('lastKnownLat', lat);
+            localStorage.setItem('lastKnownLon', lon);
+            localStorage.setItem('lastKnownName', name);
+            console.log("Zapisano ostatnią lokalizację:", name, lat, lon);
+        }
+
+        function loadLastLocation() {
+            const lat = localStorage.getItem('lastKnownLat');
+            const lon = localStorage.getItem('lastKnownLon');
+            const name = localStorage.getItem('lastKnownName');
+            if (lat && lon && name) {
+                console.log("Załadowano ostatnią lokalizację:", name, lat, lon);
+                return { lat: parseFloat(lat), lon: parseFloat(lon), name: name };
+            }
+            console.log("Brak ostatniej lokalizacji w pamięci.");
+            return null;
+        }
+
+        function saveLocationToHistory(lat, lon, name) {
+            let history = JSON.parse(localStorage.getItem('locationHistory')) || [];
+            const newLocation = { lat, lon, name };
+
+            history = history.filter(loc => !(loc.lat === lat && loc.lon === lon));
+
+            history.unshift(newLocation);
+
+            if (history.length > 10) {
+                history = history.slice(0, 10);
+            }
+
+            localStorage.setItem('locationHistory', JSON.stringify(history));
+            renderLocationHistory();
+        }
+
+        function loadLocationHistory() {
+            return JSON.parse(localStorage.getItem('locationHistory')) || [];
+        }
+
+        function renderLocationHistory() {
+            const historyList = document.getElementById('historyList');
+            const history = loadLocationHistory();
+
+            historyList.innerHTML = '';
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<li class=\"list-group-item bg-transparent text-center text-muted\">Brak ostatnich lokalizacji.</li>';
+                return;
+            }
+
+            history.forEach(loc => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item list-group-item-action bg-transparent d-flex justify-content-between align-items-center';
+                listItem.innerHTML = `
+                    <span><i class=\"fas fa-map-marker-alt me-2\"></i>${loc.name}</span>
+                    <button class=\"btn btn-sm btn-outline-primary\" data-lat=\"${loc.lat}\" data-lon=\"${loc.lon}\" data-name=\"${loc.name}\">Pokaż pogodę</button>
+                `;
+                historyList.appendChild(listItem);
+            });
+
+            historyList.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const lat = parseFloat(e.target.dataset.lat);
+                    const lon = parseFloat(e.target.dataset.lon);
+                    const name = e.target.dataset.name;
+
+                    const offcanvasMenu = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasMenu'));
+                    if (offcanvasMenu) {
+                        offcanvasMenu.hide();
+                    }
+                    
+                    showContentSection('mapa');
+                    menuItems.forEach(i => i.classList.remove('active'));
+                    document.querySelector('[data-menu-item=\"mapa\"]').classList.add('active');
+
+                    currentPlaceName = name;
+                    map.setView([lat, lon], 10);
+                    setMarker(lat, lon, name);
+                    updateResult(`Pobieranie pogody dla: ${name}...`);
+                    showSpinner(true);
+                    await fetchWeather(lat, lon).finally(() => showSpinner(false));
+                });
+            });
+        }
+
+
+        async function fetchWeather(lat, lon) {
+            try {
+                const res = await fetchWithTimeout('/app/get_weather', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lon })
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Błąd serwera: ${res.status} - ${errorText}`);
+                }
+                const data = await res.json();
+                if (data.error) return updateResult("Błąd serwera: " + data.error, true);
+
+                const current = data.current ?? {};
+                const daily = data.daily?.forecast ?? {};
+                const hourly = data.hourly?.hourly_forecast ?? {};
+
+                let resultText = `
+                    <h4 class=\"card-title text-primary\">${currentPlaceName ?? 'Nieznana lokalizacja'}</h4>
+                    <p class=\"card-text mb-1\"><i class=\"fas fa-thermometer-half me-2\"></i><strong>Temperatura:</strong> ${current.temperature ?? 'brak danych'} °C</p>
+                    <p class=\"card-text mb-1\"><i class=\"fas fa-wind me-2\"></i><strong>Wiatr:</strong> ${current.windspeed ?? 'brak danych'} km/h</p>
+                    <p class=\"card-text mb-0\"><i class=\"fas fa-clock me-2\"></i><strong>Czas pomiaru:</strong> ${current.time ? new Date(current.time).toLocaleString() : 'brak danych'}</p>
+                `;
+
+                updateResult(resultText.trim());
+                drawDailyChart(daily);
+                drawHourlyChart(hourly);
+                renderDailyWidgets(daily);
+                renderHourlyWidgets(hourly);
+
+                saveLocationToHistory(lat, lon, currentPlaceName);
+                saveLastLocation(lat, lon, currentPlaceName);
+
+            } catch (err) {
+                updateResult("Błąd podczas pobierania pogody: " + err.message, true);
+            }
+        }
+
+        function drawDailyChart(data) {
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            if (dailyChart) dailyChart.destroy();
+
+            dailyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.time.map(t => new Date(t).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' })),
+                    datasets: [
+                        {
+                            label: 'Temp. max (°C)',
+                            data: data.temperature_2m_max,
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Temp. min (°C)',
+                            data: data.temperature_2m_min,
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Opady (mm)',
+                            data: data.precipitation_sum,
+                            type: 'line',
+                            borderColor: 'rgba(0, 200, 0, 0.8)',
+                            backgroundColor: 'rgba(0, 200, 0, 0.2)',
+                            fill: true,
+                            yAxisID: 'y1',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    interaction: { mode: 'index', intersect: false },
+                    stacked: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Prognoza dzienna',
+                            color: 'var(--bs-body-color)',
+                            font: {
+                                size: 18
+                            }
+                        },
+                        legend: {
+                            labels: {
+                                color: 'var(--bs-body-color)',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                                backgroundColor: 'rgba(0,0,0,0.7)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: '#0d6efd',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'var(--bs-body-color)'
+                            },
+                            grid: {
+                                color: 'var(--bs-border-color)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Dzień',
+                                color: 'var(--bs-body-color)'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: {
+                                color: 'var(--bs-body-color)'
+                            },
+                            grid: {
+                                color: 'var(--bs-border-color)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Temperatura (°C)',
+                                color: 'var(--bs-body-color)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: {
+                                color: 'rgba(0, 200, 0, 1)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                                color: 'var(--bs-border-color)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Opady (mm)',
+                                color: 'rgba(0, 200, 0, 1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawHourlyChart(data) {
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            if (hourlyChart) hourlyChart.destroy();
+
+            const labels = data.time.map(t => new Date(t).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }));
+
+            hourlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temperatura (°C)',
+                            data: data.temperature_2m,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.4)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            yAxisID: 'y',
+                            order: 1
+                        },
+                        {
+                            label: 'Opady (mm)',
+                            data: data.precipitation,
+                            borderColor: 'rgba(0, 200, 0, 1)',
+                            backgroundColor: 'rgba(0, 200, 0, 0.4)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            yAxisID: 'y1',
+                            order: 2
+                        },
+                        {
+                            label: 'Wiatr (km/h)',
+                            data: data.windspeed_10m,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            yAxisID: 'y2',
+                            order: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    interaction: { mode: 'index', intersect: false },
+                    stacked: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Prognoza godzinowa',
+                            color: 'var(--bs-body-color)',
+                            font: {
+                                size: 18
+                            }
+                        },
+                        legend: {
+                            labels: {
+                                color: 'var(--bs-body-color)',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#0d6efd',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'var(--bs-body-color)',
+                                autoSkip: true,
+                                maxRotation: 45,
+                                minRotation: 0,
+                                callback: function(value, index, values) {
+                                    return labels[index].substring(0, 5);
+                                }
+                            },
+                            grid: {
+                                color: 'var(--bs-border-color)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Godzina',
+                                color: 'var(--bs-body-color)'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: {
+                                color: 'var(--bs-body-color)'
+                            },
+                            grid: {
+                                color: 'var(--bs-border-color)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Temperatura (°C)',
+                                color: 'var(--bs-body-color)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: {
+                                color: 'rgba(0, 200, 0, 1)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                                color: 'var(--bs-border-color)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Opady (mm)',
+                                color: 'rgba(0, 200, 0, 1)'
+                            }
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: {
+                                color: 'rgba(54, 162, 235, 1)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                                color: 'var(--bs-border-color)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Wiatr (km/h)',
+                                color: 'rgba(54, 162, 235, 1)'
+                            },
+                            offset: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDailyWidgets(data) {
+            const dailyWidgetsContainer = document.querySelector('#dailyForecastWidgets .row');
+            dailyWidgetsContainer.innerHTML = '';
+
+            if (!data || !data.time || data.time.length === 0) {
+                dailyWidgetsContainer.innerHTML = '<div class="col-12 text-center text-muted">Brak danych prognozy dziennej.</div>';
+                return;
+            }
+
+            for (let i = 0; i < data.time.length; i++) {
+                const date = new Date(data.time[i]);
+                const dayName = date.toLocaleDateString('pl-PL', { weekday: 'long' });
+                const fullDate = date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'numeric' });
+                const maxTemp = data.temperature_2m_max[i] !== undefined ? `${data.temperature_2m_max[i].toFixed(1)}°C` : 'brak danych';
+                const minTemp = data.temperature_2m_min[i] !== undefined ? `${data.temperature_2m_min[i].toFixed(1)}°C` : 'brak danych';
+                const precipitation = data.precipitation_sum[i] !== undefined ? `${data.precipitation_sum[i].toFixed(1)} mm` : 'brak danych';
+
+                const cardHtml = `
+                    <div class="col">
+                        <div class="card h-100 shadow-sm p-3 rounded-4">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary mb-1">${dayName}</h5>
+                                <p class="card-subtitle mb-2 text-muted">${fullDate}</p>
+                                <p class="card-text mb-1"><i class="fas fa-temperature-high me-2"></i>Max: <strong>${maxTemp}</strong></p>
+                                <p class="card-text mb-1"><i class="fas fa-temperature-low me-2"></i>Min: <strong>${minTemp}</strong></p>
+                                <p class="card-text mb-0"><i class="fas fa-cloud-showers-heavy me-2"></i>Opady: <strong>${precipitation}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                dailyWidgetsContainer.insertAdjacentHTML('beforeend', cardHtml);
+            }
+        }
+
+        function renderHourlyWidgets(data) {
+            const hourlyWidgetsContainer = document.querySelector('#hourlyForecastWidgets .d-flex');
+            hourlyWidgetsContainer.innerHTML = '';
+
+            if (!data || !data.time || data.time.length === 0) {
+                hourlyWidgetsContainer.innerHTML = '<div class="col-12 text-center text-muted">Brak danych prognozy godzinowej.</div>';
+                return;
+            }
+
+            for (let i = 0; i < data.time.length; i++) {
+                const date = new Date(data.time[i]);
+                const time = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+                const temperature = data.temperature_2m[i] !== undefined ? `${data.temperature_2m[i].toFixed(1)}°C` : 'brak danych';
+                const windspeed = data.windspeed_10m[i] !== undefined ? `${data.windspeed_10m[i].toFixed(1)} km/h` : 'brak danych';
+                const precipitation = data.precipitation[i] !== undefined ? `${data.precipitation[i].toFixed(1)} mm` : 'brak danych';
+
+                const cardHtml = `
+                    <div class="card flex-shrink-0 me-3 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <h6 class="card-title text-primary mb-1">${time}</h6>
+                            <p class="card-text mb-1"><i class="fas fa-thermometer-half me-2"></i>Temp: <strong>${temperature}</strong></p>
+                            <p class="card-text mb-1"><i class="fas fa-wind me-2"></i>Wiatr: <strong>${windspeed}</strong></p>
+                            <p class="card-text mb-0"><i class="fas fa-cloud-rain me-2"></i>Opady: <strong>${precipitation}</strong></p>
+                        </div>
+                    </div>
+                `;
+                hourlyWidgetsContainer.insertAdjacentHTML('beforeend', cardHtml);
+            }
+        }
+
+        updateRainLayer();
+        renderLocationHistory();
+    </script>
+</body>
+</html>
