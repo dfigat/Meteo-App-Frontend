@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Status serwera</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #e0f2f1;
+      color: #004d40;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .box {
+      background: white;
+      padding: 2em;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="box" id="statusBox">
+    <h1>Ładowanie...</h1>
+    <p>Trwa sprawdzanie statusu serwera...</p>
+  </div>
+
+  <script>
+    fetch("/ping", { headers: { Accept: "application/json" } })
+      .then(res => res.json())
+      .then(data => {
+        const box = document.getElementById("statusBox");
+        box.innerHTML = `
+          <h1>✅ Serwer działa</h1>
+          <p>Status: <strong>${data.status}</strong></p>
+        `;
+      })
+      .catch(err => {
+        const box = document.getElementById("statusBox");
+        box.innerHTML = `
+          <h1 class="error">Błąd</h1>
+          <p class="error">Nie udało się połączyć z serwerem:<br>${err.message}</p>
+        `;
+      });
+  </script>
+</body>
+</html>
+
