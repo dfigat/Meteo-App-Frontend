@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <title>Historia pogody - {{ city }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: linear-gradient(135deg, #FDFCFB 0%, #E2D1C3 100%);
+            color: #222;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #2a2a72;
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .error {
+            color: #ff4c4c;
+            font-weight: 700;
+            background: #ffe6e6;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(255,0,0,0.15);
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        table {
+            width: 90%;
+            max-width: 900px;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            background-color: #fff;
+            margin-bottom: 40px;
+            font-size: 1rem;
+        }
+
+        thead tr {
+            background: linear-gradient(90deg, #2a2a72, #009ffd);
+            color: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        th, td {
+            padding: 14px 20px;
+            text-align: center;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        th:last-child, td:last-child {
+            border-right: none;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.3s ease;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f7faff;
+        }
+
+        tbody tr:hover {
+            background-color: #dbe9ff;
+        }
+
+        canvas {
+            max-width: 95%;
+            margin-bottom: 60px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+            table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Historia pogody dla {{ city }}<br>od {{ start_date }} do {{ end_date }}</h1>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% elif history %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Temp. maks. (°C)</th>
+                    <th>Temp. min. (°C)</th>
+                    <th>Opady (mm)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in range(history["time"]|length) %}
+                    <tr>
+                        <td>{{ history["time"][i] }}</td>
+                        <td>{{ history["temperature_2m_max"][i] }}</td>
+                        <td>{{ history["temperature_2m_min"][i] }}</td>
+                        <td>{{ history["precipitation_sum"][i] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <canvas id="historyChart" width="800" height="400"></canvas>
+
+        <script>
+            const labels = {{ history["time"]|tojson }};
+            const tempMax = {{ history["temperature_2m_max"]|tojson }};
+            const tempMin = {{ history["temperature_2m_min"]|tojson }};
+            const precipitation = {{ history["precipitation_sum"]|tojson }};
+
+            const ctx = document.getElementById('historyChart').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temperatura maksymalna (°C)',
+                            data: tempMax,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            fill: false,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Temperatura minimalna (°C)',
+                            data: tempMin,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            fill: false,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Opady (mm)',
+                            data: precipitation,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            fill: true,
+                            yAxisID: 'y1',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Temperatura (°C)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Opady (mm)'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Historia pogody'
+                        }
+                    }
+                }
+            });
+        </script>
+    {% endif %}
+</body>
+</html>
+
