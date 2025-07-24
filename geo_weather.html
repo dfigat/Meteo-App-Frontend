@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Pogoda z koordynatów</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f0f0; padding: 2rem; }
+    .card {
+      background: white; padding: 2rem; border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 500px; margin: auto;
+    }
+    .label { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Pogoda z Open-Meteo</h2>
+    <p><span class="label">Miasto:</span> {{ weather.city }}</p>
+    <p><span class="label">Szerokość:</span> {{ weather.latitude }}</p>
+    <p><span class="label">Długość:</span> {{ weather.longitude }}</p>
+    <p><span class="label">Temperatura:</span> {{ weather.temperature }} °C</p>
+    <p><span class="label">Wiatr:</span> {{ weather.windspeed }} m/s</p>
+    <p><span class="label">Czas:</span> {{ weather.time }}</p>
+  </div>
+</body>
+</html>
+
