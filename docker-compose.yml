@@ -1,0 +1,14 @@
+services:
+  weather-web:
+    build:
+      context: ./weather-webapp
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - web-net
+networks:
+  web-net:
+    external: true
+    name: shared-net
